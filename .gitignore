@@ -1,0 +1,45 @@
+# Archivos de compilación (en la raíz)
+/*.min
+/*.hex
+/*.obj
+/*.src
+/*.lst
+/*.map
+/*.sre
+/*.abs
+/*.out
+
+# Build directory
+build/
+
+# Archivos generados por compilación (NO subir al repo)
+*.min
+*.hex
+*.obj
+*.src
+*.lst
+*.map
+*.sre
+*.abs
+*.out
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+*~
+
+# No incluir pm.mk local (usar el de c88-pokemini)
+pm.mk
+pm_gnu.mk
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+.dockerignore
+
+# Logs
+*.log

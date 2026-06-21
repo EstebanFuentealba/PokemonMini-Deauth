@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  pm-compiler:
+    build:
+      context: .
+      platforms:
+        - linux/amd64
+    image: pm-compiler
+    platform: linux/amd64
+    volumes:
+      - .:/project
+    command: make
+    
+  pm-compiler-clean:
+    build:
+      context: .
+      platforms:
+        - linux/amd64
+    image: pm-compiler
+    platform: linux/amd64
+    volumes:
+      - .:/project
+    command: make clean
+    
+  pm-compiler-shell:
+    build:
+      context: .
+      platforms:
+        - linux/amd64
+    image: pm-compiler
+    platform: linux/amd64
+    volumes:
+      - .:/project
+    stdin_open: true
+    tty: true
+    command: bash
+
