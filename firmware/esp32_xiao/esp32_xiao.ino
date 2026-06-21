@@ -4,10 +4,13 @@
  * management frames. SIM_DEAUTH only exercises the command/status path. */
 static char inputLine[96];
 static size_t inputLength;
+static char usbInputLine[96];
+static size_t usbInputLength;
 static int scanCount;
 static uint32_t rxBytes;
 static uint32_t commandCount;
 static uint32_t lastHeartbeat;
+static uint32_t lastUartByteAt;
 
 static void logPrefix(const char* level) {
   Serial.print('[');
@@ -29,6 +32,10 @@ static void sendLine(const char* response) {
 }
 
 static void logRxByte(uint8_t value) {
+  if (rxBytes == 65) {
+    logLine("RX BYTE", "Further raw-byte logs suppressed; counters remain active");
+  }
+  if (rxBytes > 64) return;
   logPrefix("RX BYTE");
   Serial.print("0x");
   if (value < 0x10) Serial.print('0');
@@ -134,27 +141,36 @@ void setup() {
   Serial.begin(115200);
   delay(250);
   /* XIAO ESP32-S3 D6=TX/GPIO43 and D7=RX/GPIO44 by default. Adjust to wiring. */
+  /* UART idle is HIGH. This prevents a disconnected RP2040 TX from floating. */
+  pinMode(D7, INPUT_PULLUP);
   Serial1.begin(115200, SERIAL_8N1, D7, D6);
   inputLength = 0;
+  usbInputLength = 0;
   scanCount = 0;
   rxBytes = 0;
   commandCount = 0;
   lastHeartbeat = millis();
+  lastUartByteAt = 0;
 
   logLine("BOOT", "PM WiFi Lab ESP32-S3 starting");
   logLine("UART", "Serial1 115200 8N1 RX=D7/GPIO44 TX=D6/GPIO43");
-  logLine("READY", "Waiting for RP2040 commands");
+  logLine("READY", "Waiting for RP2040 commands; USB console accepts PING or SCAN");
 }
 
 void loop() {
   while (Serial1.available()) {
     char c = (char)Serial1.read();
     ++rxBytes;
+    lastUartByteAt = millis();
     logRxByte((uint8_t)c);
     if (c == '\r') continue;
     if (c == '\n') {
       inputLine[inputLength] = '\0';
       if (inputLength) handleCommand(inputLine);
+      inputLength = 0;
+    } else if ((uint8_t)c < 32 || (uint8_t)c > 126) {
+      /* The protocol is printable ASCII. Drop binary noise immediately so it
+       * cannot prefix and corrupt the next real command. */
       inputLength = 0;
     } else if (inputLength + 1 < sizeof(inputLine)) {
       inputLine[inputLength++] = c;
@@ -162,6 +178,32 @@ void loop() {
       inputLength = 0;
       sendLine("ERR 2 LINE_TOO_LONG");
       logLine("ERROR", "UART input line exceeded 95 bytes");
+    }
+  }
+
+  /* A truncated/noisy line must not survive until a later valid command. */
+  if (inputLength && millis() - lastUartByteAt > 250) {
+    logLine("UART", "Discarding incomplete line after 250 ms idle");
+    inputLength = 0;
+  }
+
+  /* USB diagnostic console: type PING or SCAN in Serial Monitor using a
+   * newline ending to test the ESP32 without depending on the RP2040. */
+  while (Serial.available()) {
+    char c = (char)Serial.read();
+    if (c == '\r') continue;
+    if (c == '\n') {
+      usbInputLine[usbInputLength] = '\0';
+      if (usbInputLength) {
+        logPrefix("USB CMD"); Serial.println(usbInputLine);
+        handleCommand(usbInputLine);
+      }
+      usbInputLength = 0;
+    } else if (usbInputLength + 1 < sizeof(usbInputLine)) {
+      usbInputLine[usbInputLength++] = c;
+    } else {
+      usbInputLength = 0;
+      logLine("ERROR", "USB command exceeded 95 bytes");
     }
   }
 

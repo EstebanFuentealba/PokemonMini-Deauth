@@ -5,6 +5,16 @@ PM2040 basado en **Waveshare RP2040-Zero** y un **Seeed Studio XIAO ESP32-S3**.
 
 ## Conexión recomendada
 
+**RP2040-Zero**
+<p>
+<img src="./waveshare_RP2040_Zero_front_pinout.png" />
+</p>
+
+**ESP32S3**
+<p>
+<img src="./XIAO_ESP32-S3_front_pinout.png" />
+</p>
+
 | RP2040-Zero | Dirección | XIAO ESP32-S3 | Función |
 |---|---:|---|---|
 | GPIO27 | → | D7 / GPIO44 / RX | Datos del RP2040 al ESP32 |
@@ -119,6 +129,8 @@ El firmware RP2040 debe configurar un UART PIO equivalente:
 Conecta el USB-C del XIAO al computador y abre su puerto serie a **115200 baud**
 con Arduino IDE, PlatformIO o cualquier monitor serial. Los logs de diagnóstico
 salen por USB (`Serial`); el protocolo del RP2040 continúa en D6/D7 (`Serial1`).
+Puedes escribir `PING` o `SCAN` con terminación newline en el monitor para probar
+el ESP32 directamente, sin depender del RP2040.
 
 Al arrancar debe aparecer:
 
