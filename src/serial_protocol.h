@@ -4,7 +4,9 @@
 #include "wifi_ap_model.h"
 #include <stdint.h>
 
-#define SERIAL_TIMEOUT_TICKS 300
+/* WiFi scans may take several seconds. At roughly 60 PRC ticks/s this gives
+ * the ESP32 up to 15 seconds while still keeping the UI non-blocking. */
+#define SERIAL_TIMEOUT_TICKS 900
 #define SERIAL_MAX_LINE 96
 
 typedef enum {

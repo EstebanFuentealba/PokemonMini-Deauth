@@ -114,6 +114,47 @@ El firmware RP2040 debe configurar un UART PIO equivalente:
 6. Verifica que el XIAO responda `PONG\n`.
 7. Solo después prueba `SCAN\n`.
 
+## Ver los logs del XIAO
+
+Conecta el USB-C del XIAO al computador y abre su puerto serie a **115200 baud**
+con Arduino IDE, PlatformIO o cualquier monitor serial. Los logs de diagnóstico
+salen por USB (`Serial`); el protocolo del RP2040 continúa en D6/D7 (`Serial1`).
+
+Al arrancar debe aparecer:
+
+```text
+[250] [BOOT] PM WiFi Lab ESP32-S3 starting
+[250] [UART] Serial1 115200 8N1 RX=D7/GPIO44 TX=D6/GPIO43
+[250] [READY] Waiting for RP2040 commands
+[5000] [ALIVE] uptime=5000ms rx_bytes=0 commands=0
+```
+
+Al recibir un scan correcto debe verse algo similar a:
+
+```text
+[RX BYTE] 0x53 'S'
+[RX BYTE] 0x43 'C'
+[RX BYTE] 0x41 'A'
+[RX BYTE] 0x4E 'N'
+[RX BYTE] 0x0A
+[RX CMD] SCAN
+[TX] OK
+[SCAN] Starting WiFi scan
+[SCAN] Found 4 AP(s) in 2860 ms
+[TX AP] 0 SSID=MiWifi BSSID=AA:BB:CC:DD:EE:FF CH=6 RSSI=-53
+[TX] SCAN_DONE 4
+```
+
+Interpretación rápida:
+
+- Hay `ALIVE`, pero `rx_bytes=0`: el RP2040 no transmite, el puente PIO-UART no
+  está implementado/cargado o TX/RX/GND están mal conectados.
+- Hay `RX BYTE`, pero no `RX CMD`: falta `\n`, el baudrate no coincide o llegan
+  bytes corruptos.
+- Aparece `RX CMD` y `TX`, pero la ROM termina en timeout: el problema está en
+  el retorno ESP32 → RP2040 o en el mailbox RP2040 → Pokémon Mini.
+- No aparece `ALIVE`: revisa alimentación, puerto USB y baudrate del monitor.
+
 ## Referencias de pinout
 
 - [Seeed Studio XIAO ESP32-S3: pinout oficial](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/)
