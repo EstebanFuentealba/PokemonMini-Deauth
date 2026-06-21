@@ -1,5 +1,7 @@
 # Contrato RP2040 ↔ ROM ↔ ESP32-S3
 
+Consulta también el [cableado entre RP2040-Zero y XIAO ESP32-S3](conexion-rp2040-zero-xiao-esp32s3.md).
+
 El ROM no controla un UART directamente. El RP2040 expone al bus del cartucho
 un mailbox de 256 bytes en `0x1FFF00` y es el único dueño del UART conectado al
 ESP32-S3. El firmware específico del cartucho debe implementar este contrato.
