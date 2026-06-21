@@ -75,6 +75,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install RP2040 build toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            gcc-arm-none-eabi \
+            libnewlib-arm-none-eabi \
+            ninja-build
       - uses: actions/download-artifact@v4
         with:
           name: pokemon-mini-rom
@@ -90,7 +97,9 @@ jobs:
         run: |
           python3 .ci/PM2040/code/bin2c.py "dist/rom/${ROM_BASENAME}.min" .ci/PM2040/code/rom.h
           sed -i 's/^#define MULTICART/\/\/ #define MULTICART/' .ci/PM2040/code/main.c
-          cmake -S .ci/PM2040/code -B build/pm2040 -DPICO_SDK_PATH="$PWD/.ci/pico-sdk" -DCMAKE_BUILD_TYPE=Release
+          cmake -S .ci/PM2040/code -B build/pm2040 -G Ninja \
+            -DPICO_SDK_PATH="$PWD/.ci/pico-sdk" \
+            -DCMAKE_BUILD_TYPE=Release
           cmake --build build/pm2040 --parallel 2
           mkdir -p dist/rp2040
           cp build/pm2040/PM2040.uf2 dist/rp2040/pm2040-pm-wifi-lab.uf2
