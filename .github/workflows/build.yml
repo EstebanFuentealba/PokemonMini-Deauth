@@ -81,6 +81,7 @@ jobs:
           sudo apt-get install --no-install-recommends -y \
             gcc-arm-none-eabi \
             libnewlib-arm-none-eabi \
+            libstdc++-arm-none-eabi-newlib \
             ninja-build
       - uses: actions/download-artifact@v4
         with:
@@ -95,17 +96,20 @@ jobs:
           git -C .ci/PM2040 checkout --detach "${PM2040_REF}"
       - name: Embed ROM and compile PM2040 UF2
         run: |
-          python3 .ci/PM2040/code/bin2c.py "dist/rom/${ROM_BASENAME}.min" .ci/PM2040/code/rom.h
+          # Build a ROM-less UF2 with the same ROMSTART marker used by the
+          # official PM2040 web patcher, then inject this build's .min.
+          python3 tools/pm2040_patcher.py make-header .ci/PM2040/code/rom.h
           sed -i 's/^#define MULTICART/\/\/ #define MULTICART/' .ci/PM2040/code/main.c
-          # PM2040 is C + PIO assembly only. Avoid Pico SDK's optional C++
-          # runtime, which is not present in Ubuntu's minimal ARM toolchain.
-          sed -i 's/project(${PROJECT})/project(${PROJECT} C ASM)/' .ci/PM2040/code/CMakeLists.txt
           cmake -S .ci/PM2040/code -B build/pm2040 -G Ninja \
             -DPICO_SDK_PATH="$PWD/.ci/pico-sdk" \
             -DCMAKE_BUILD_TYPE=Release
           cmake --build build/pm2040 --parallel 2
           mkdir -p dist/rp2040
-          cp build/pm2040/PM2040.uf2 dist/rp2040/pm2040-pm-wifi-lab.uf2
+          cp build/pm2040/PM2040.uf2 dist/rp2040/PM2040_BASE.uf2
+          python3 tools/pm2040_patcher.py patch \
+            dist/rp2040/PM2040_BASE.uf2 \
+            "dist/rom/${ROM_BASENAME}.min" \
+            dist/rp2040/pm2040-pm-wifi-lab.uf2
       - uses: actions/upload-artifact@v4
         with:
           name: rp2040-pm2040-firmware
