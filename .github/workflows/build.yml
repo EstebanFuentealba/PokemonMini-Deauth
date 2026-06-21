@@ -97,6 +97,9 @@ jobs:
         run: |
           python3 .ci/PM2040/code/bin2c.py "dist/rom/${ROM_BASENAME}.min" .ci/PM2040/code/rom.h
           sed -i 's/^#define MULTICART/\/\/ #define MULTICART/' .ci/PM2040/code/main.c
+          # PM2040 is C + PIO assembly only. Avoid Pico SDK's optional C++
+          # runtime, which is not present in Ubuntu's minimal ARM toolchain.
+          sed -i 's/project(${PROJECT})/project(${PROJECT} C ASM)/' .ci/PM2040/code/CMakeLists.txt
           cmake -S .ci/PM2040/code -B build/pm2040 -G Ninja \
             -DPICO_SDK_PATH="$PWD/.ci/pico-sdk" \
             -DCMAKE_BUILD_TYPE=Release
