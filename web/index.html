@@ -1,26 +1,48 @@
-
 <!doctype html>
-<html>
-    <head>
-        <title>minimon.js</title>
-
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-        
-        <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
-        <link rel="icon" href="favicon.png">
-    </head>
-    <body>
-        <div class="container"></div>
-        <script>
-            function loadedWasm() {
-                fetch(`./game.min?t=${Date.now()}`).then(response => response.arrayBuffer()).then((game)=> {
-                    window.systemContext.system.load(game);
-                    window.systemContext.system.reset();
-                });
-            }
-        </script>
-        <script src="app.js" async defer></script>
-    </body>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#101814">
+    <title>PM WiFi Lab</title>
+    <link rel="icon" href="favicon.png">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Pokémon Mini · laboratorio seguro</p>
+        <h1>PM WiFi Lab</h1>
+        <p>Prueba la ROM, instala el firmware del XIAO ESP32-S3 y prepara tu cartucho PM2040 desde una sola página.</p>
+      </div>
+      <span class="status">SIM ONLY</span>
+    </header>
+    <main>
+      <section class="panel emulator-panel">
+        <div class="section-heading"><div><span>01</span><h2>Emulador</h2></div><a class="secondary" href="game.min" download>Descargar ROM .min</a></div>
+        <iframe src="emulator.html" title="Emulador Pokémon Mini" allow="fullscreen"></iframe>
+      </section>
+      <section class="firmware-grid">
+        <article class="panel">
+          <div class="section-heading"><div><span>02</span><h2>ESP32-S3 XIAO</h2></div></div>
+          <p>Conecta el XIAO por USB. Chrome o Edge pueden instalar directamente el firmware UART/WiFi.</p>
+          <ol><li>Desconecta el RP2040 del UART durante la instalación.</li><li>Pulsa instalar y elige el puerto del XIAO.</li><li>Confirma la instalación segura.</li></ol>
+          <esp-web-install-button manifest="firmware/esp32/manifest.json"><button slot="activate" class="primary">Instalar en ESP32-S3</button><span slot="unsupported">Web Serial requiere Chrome o Edge de escritorio.</span></esp-web-install-button>
+          <a class="text-link" href="firmware/esp32/firmware.bin" download>Descargar aplicación .bin</a>
+        </article>
+        <article class="panel">
+          <div class="section-heading"><div><span>03</span><h2>RP2040 / PM2040</h2></div></div>
+          <p>El UF2 incluye esta ROM sobre el firmware oficial del cartucho PM2040. La extensión mailbox/UART documentada debe integrarse en el firmware de tu revisión del cartucho.</p>
+          <ol><li>Mantén BOOT presionado al conectar el RP2040.</li><li>Espera que aparezca la unidad RPI-RP2.</li><li>Selecciona esa carpeta para copiar el UF2.</li></ol>
+          <button id="flash-rp2040" class="primary">Copiar UF2 a RPI-RP2</button>
+          <a class="text-link" href="firmware/rp2040/pm2040-pm-wifi-lab.uf2" download>Descargar firmware .uf2</a>
+          <p id="rp2040-status" class="message" aria-live="polite"></p>
+        </article>
+      </section>
+      <section class="notice"><strong>Modo laboratorio.</strong> El firmware ESP32 solo escanea redes y simula estados. No transmite deauth ni inyecta paquetes. El UF2 publicado conserva el firmware PM2040 oficial y no inventa un pinout UART específico del cartucho.</section>
+    </main>
+    <footer>PM WiFi Lab · builds reproducibles desde GitHub Actions</footer>
+    <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+    <script src="site.js"></script>
+  </body>
 </html>

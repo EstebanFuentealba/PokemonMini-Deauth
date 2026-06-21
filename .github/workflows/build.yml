@@ -1,0 +1,169 @@
+name: Build ROM and firmware
+
+on:
+  push:
+    branches: [main, master, develop]
+    tags: ['v*']
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ROM_BASENAME: pm-wifi-lab
+  ESP32_CORE_VERSION: 3.2.0
+  PICO_SDK_VERSION: 2.1.1
+  PM2040_REF: 0ff199676ee39709ab7bb53d5d89cc06e7409b08
+
+jobs:
+  pokemon-mini-rom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build c88-pokemini image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          tags: pm-compiler:ci
+          load: true
+          cache-from: type=gha,scope=c88
+          cache-to: type=gha,mode=max,scope=c88
+      - name: Compile Pokemon Mini ROM
+        run: docker run --rm --platform linux/amd64 -v "$PWD:/project" pm-compiler:ci make
+      - name: Normalize ROM filenames
+        run: |
+          mkdir -p dist/rom
+          cp helloworld.min "dist/rom/${ROM_BASENAME}.min"
+          test -f helloworld.sre && cp helloworld.sre "dist/rom/${ROM_BASENAME}.sre" || true
+          test -f helloworld.map && cp helloworld.map "dist/rom/${ROM_BASENAME}.map" || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pokemon-mini-rom
+          path: dist/rom/
+          if-no-files-found: error
+
+  esp32-xiao:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: arduino/setup-arduino-cli@v2
+      - name: Install ESP32 Arduino core
+        run: |
+          arduino-cli config init
+          arduino-cli core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core install "esp32:esp32@${ESP32_CORE_VERSION}" --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+      - name: Compile XIAO ESP32-S3 firmware
+        run: |
+          mkdir -p build/esp32 dist/esp32
+          arduino-cli compile --fqbn esp32:esp32:XIAO_ESP32S3 --output-dir build/esp32 firmware/esp32_xiao
+          cp build/esp32/*.ino.bin dist/esp32/firmware.bin
+          cp build/esp32/*.ino.bootloader.bin dist/esp32/bootloader.bin
+          cp build/esp32/*.ino.partitions.bin dist/esp32/partitions.bin
+          cp "$HOME/.arduino15/packages/esp32/hardware/esp32/${ESP32_CORE_VERSION}/tools/partitions/boot_app0.bin" dist/esp32/boot_app0.bin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: esp32-xiao-firmware
+          path: dist/esp32/
+          if-no-files-found: error
+
+  rp2040-pm2040:
+    needs: pokemon-mini-rom
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: pokemon-mini-rom
+          path: dist/rom
+      - name: Fetch Pico SDK and official PM2040 firmware
+        run: |
+          git clone --depth 1 --branch "${PICO_SDK_VERSION}" https://github.com/raspberrypi/pico-sdk.git .ci/pico-sdk
+          git -C .ci/pico-sdk submodule update --init --recursive --depth 1
+          git clone --depth 1 https://github.com/zwenergy/PM2040.git .ci/PM2040
+          git -C .ci/PM2040 fetch --depth 1 origin "${PM2040_REF}"
+          git -C .ci/PM2040 checkout --detach "${PM2040_REF}"
+      - name: Embed ROM and compile PM2040 UF2
+        run: |
+          python3 .ci/PM2040/code/bin2c.py "dist/rom/${ROM_BASENAME}.min" .ci/PM2040/code/rom.h
+          sed -i 's/^#define MULTICART/\/\/ #define MULTICART/' .ci/PM2040/code/main.c
+          cmake -S .ci/PM2040/code -B build/pm2040 -DPICO_SDK_PATH="$PWD/.ci/pico-sdk" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/pm2040 --parallel 2
+          mkdir -p dist/rp2040
+          cp build/pm2040/PM2040.uf2 dist/rp2040/pm2040-pm-wifi-lab.uf2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rp2040-pm2040-firmware
+          path: dist/rp2040/
+          if-no-files-found: error
+
+  package:
+    needs: [pokemon-mini-rom, esp32-xiao, rp2040-pm2040]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: pokemon-mini-rom
+          path: dist/rom
+      - uses: actions/download-artifact@v4
+        with:
+          name: esp32-xiao-firmware
+          path: dist/esp32
+      - uses: actions/download-artifact@v4
+        with:
+          name: rp2040-pm2040-firmware
+          path: dist/rp2040
+      - name: Assemble GitHub Pages site
+        run: |
+          mkdir -p site/firmware/esp32 site/firmware/rp2040
+          cp -R web/. site/
+          cp "dist/rom/${ROM_BASENAME}.min" site/game.min
+          cp dist/esp32/* site/firmware/esp32/
+          cp dist/rp2040/* site/firmware/rp2040/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-binaries
+          path: dist/
+          if-no-files-found: error
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+
+  deploy-pages:
+    needs: package
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  release:
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-binaries
+          path: dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/rom/*
+            dist/esp32/*
+            dist/rp2040/*

@@ -1,0 +1,5 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>PM WiFi Lab emulator</title><link rel="icon" href="favicon.png"><style>html,body,.container{height:100%;margin:0;background:#f2f0e5}</style></head>
+<body><div class="container"></div><script>
+function loadedWasm(){fetch(`./game.min?t=${Date.now()}`).then(response=>{if(!response.ok)throw new Error('ROM unavailable');return response.arrayBuffer()}).then(game=>{window.systemContext.system.load(game);window.systemContext.system.reset()})}
+</script><script src="app.js" async defer></script></body></html>
