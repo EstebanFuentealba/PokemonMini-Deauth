@@ -1,0 +1,39 @@
+.program lale_latch_64k
+
+; Serve a mutable 64 KiB ROM mirror from SRAM. The Pokemon Mini address is
+; intentionally mirrored every 64 KiB; this project's mailbox at 0x1fff00
+; therefore maps to rom_runtime[0xff00].
+pull block
+mov y, osr
+
+.wrap_target
+wait_lale:
+wait 1 gpio 12
+jmp pin glitch_filter
+jmp wait_lale
+glitch_filter:
+jmp pin latch_addr
+jmp wait_lale
+latch_addr:
+pull noblock
+mov x, osr
+in pins, 10
+in x, 6
+in y, 16
+push
+wait 0 gpio 12
+.wrap
+
+% c-sdk {
+static inline void lale_latch_64k_program_init(PIO pio, uint sm, uint offset,
+                                                uint addr_pin, uint lale_pin) {
+    pio_sm_config c = lale_latch_64k_program_get_default_config(offset);
+    pio_sm_set_consecutive_pindirs(pio, sm, addr_pin, 10, false);
+    pio_sm_set_consecutive_pindirs(pio, sm, lale_pin, 1, false);
+    sm_config_set_in_pins(&c, addr_pin);
+    sm_config_set_in_pin_count(&c, 10);
+    sm_config_set_jmp_pin(&c, lale_pin);
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}

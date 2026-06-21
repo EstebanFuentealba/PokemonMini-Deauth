@@ -96,10 +96,13 @@ jobs:
           git -C .ci/PM2040 checkout --detach "${PM2040_REF}"
       - name: Embed ROM and compile PM2040 UF2
         run: |
-          # Build a ROM-less UF2 with the same ROMSTART marker used by the
-          # official PM2040 web patcher, then inject this build's .min.
+          # Reuse PM2040's proven cartridge bus implementation, adding the
+          # mutable mailbox and PIO UART bridge from this repository.
           python3 tools/pm2040_patcher.py make-header .ci/PM2040/code/rom.h
-          sed -i 's/^#define MULTICART/\/\/ #define MULTICART/' .ci/PM2040/code/main.c
+          cp firmware/rp2040_pm2040/main.c .ci/PM2040/code/main.c
+          cp firmware/rp2040_pm2040/CMakeLists.txt .ci/PM2040/code/CMakeLists.txt
+          cp firmware/rp2040_pm2040/*.pio .ci/PM2040/code/
+          test "$(stat -c%s "dist/rom/${ROM_BASENAME}.min")" -le 65536
           cmake -S .ci/PM2040/code -B build/pm2040 -G Ninja \
             -DPICO_SDK_PATH="$PWD/.ci/pico-sdk" \
             -DCMAKE_BUILD_TYPE=Release

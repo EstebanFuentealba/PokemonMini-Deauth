@@ -101,7 +101,7 @@ El XIAO ya usa esta configuración en `firmware/esp32_xiao/esp32_xiao.ino`:
 Serial1.begin(115200, SERIAL_8N1, D7, D6); // RX=D7, TX=D6
 ```
 
-El firmware RP2040 debe configurar un UART PIO equivalente:
+El firmware RP2040 incluido configura este UART PIO:
 
 ```c
 #define ESP_UART_TX_PIN 27
@@ -110,16 +110,15 @@ El firmware RP2040 debe configurar un UART PIO equivalente:
 ```
 
 > **Importante:** el UF2 generado actualmente incorpora la ROM dentro del
-> firmware oficial PM2040, pero el firmware oficial no implementa por sí mismo
-> el mailbox ni el puente PIO-UART. Esa extensión debe incorporarse al firmware
-> RP2040 antes de esperar respuestas del ESP32.
+> firmware oficial PM2040, y este proyecto agrega el mailbox y el puente
+> PIO-UART mediante los archivos de `firmware/rp2040_pm2040`.
 
 ## Comprobación inicial
 
 1. Revisa continuidad y ausencia de cortocircuitos con ambas placas apagadas.
 2. Conecta GND común, GPIO27 → D7 y GPIO28 ← D6.
 3. Flashea el firmware del XIAO.
-  4. Flashea un UF2 del RP2040 que incluya el puente mailbox/PIO-UART.
+4. Flashea `pm2040-pm-wifi-lab.uf2`, que incluye el puente mailbox/PIO-UART.
 5. Envía `PING\n` desde el RP2040.
 6. Verifica que el XIAO responda `PONG\n`.
 7. Solo después prueba `SCAN\n`.

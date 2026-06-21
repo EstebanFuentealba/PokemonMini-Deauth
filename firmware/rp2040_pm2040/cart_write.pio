@@ -1,0 +1,30 @@
+.program cart_write
+
+; Capture one GPIO snapshot per Pokemon Mini cartridge write. GPIO0..9 hold
+; the low address and GPIO17..24 hold the data byte, so one state machine is
+; enough and leaves room in PIO1 for both UART directions.
+.wrap_target
+wait_we:
+wait 1 gpio 13
+jmp pin glitch_filter
+jmp wait_we
+glitch_filter:
+jmp pin capture
+jmp wait_we
+capture:
+mov isr, pins
+push
+wait 0 gpio 13
+.wrap
+
+% c-sdk {
+static inline void cart_write_program_init(PIO pio, uint sm, uint offset,
+                                            uint we_pin) {
+    pio_sm_config c = cart_write_program_get_default_config(offset);
+    pio_sm_set_consecutive_pindirs(pio, sm, 0, 25, false);
+    sm_config_set_jmp_pin(&c, we_pin);
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_RX);
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}

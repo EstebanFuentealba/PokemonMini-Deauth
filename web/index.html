@@ -32,14 +32,14 @@
         </article>
         <article class="panel">
           <div class="section-heading"><div><span>03</span><h2>RP2040 / PM2040</h2></div></div>
-          <p>El UF2 incluye esta ROM sobre el firmware oficial del cartucho PM2040. La extensión mailbox/UART documentada debe integrarse en el firmware de tu revisión del cartucho.</p>
+          <p>El UF2 incluye la ROM y el puente mailbox/PIO-UART para GPIO27 (TX) y GPIO28 (RX), basado en el bus de cartucho de PM2040.</p>
           <ol><li>Mantén BOOT presionado al conectar el RP2040.</li><li>Espera que aparezca la unidad RPI-RP2.</li><li>Selecciona esa carpeta para copiar el UF2.</li></ol>
           <button id="flash-rp2040" class="primary">Copiar UF2 a RPI-RP2</button>
           <a class="text-link" href="firmware/rp2040/pm2040-pm-wifi-lab.uf2" download>Descargar firmware .uf2</a>
           <p id="rp2040-status" class="message" aria-live="polite"></p>
         </article>
       </section>
-      <section class="notice"><strong>Modo laboratorio.</strong> El firmware ESP32 solo escanea redes y simula estados. No transmite deauth ni inyecta paquetes. El UF2 publicado conserva el firmware PM2040 oficial y no inventa un pinout UART específico del cartucho.</section>
+      <section class="notice"><strong>Modo laboratorio.</strong> El firmware ESP32 solo escanea redes y simula estados. No transmite deauth ni inyecta paquetes. El RP2040 usa UART PIO a 115200 baud en GPIO27/28.</section>
     </main>
     <footer>PM WiFi Lab · builds reproducibles desde GitHub Actions</footer>
     <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>

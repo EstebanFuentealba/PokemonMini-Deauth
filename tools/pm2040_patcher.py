@@ -13,6 +13,7 @@ from pathlib import Path
 
 ROM_MARKER = b"ROMSTART"
 MAX_ROM_SIZE = 1024 * 1024
+BRIDGE_ROM_SIZE = 64 * 1024
 UF2_BLOCK_SIZE = 512
 UF2_DATA_OFFSET = 32
 UF2_MAGIC_START0 = 0x0A324655
@@ -74,6 +75,11 @@ def patch_uf2(base: Path, rom_path: Path, output: Path) -> None:
         raise ValueError("ROM is empty")
     if len(rom) > MAX_ROM_SIZE:
         raise ValueError(f"ROM exceeds the PM2040 1 MiB limit: {len(rom)} bytes")
+    if len(rom) > BRIDGE_ROM_SIZE:
+        raise ValueError(
+            "ROM exceeds the 64 KiB mutable bridge window: "
+            f"{len(rom)} bytes"
+        )
 
     image = bytearray(base.read_bytes())
     payload = uf2_payload_map(image)

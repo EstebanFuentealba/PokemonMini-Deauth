@@ -4,7 +4,11 @@ Consulta también el [cableado entre RP2040-Zero y XIAO ESP32-S3](conexion-rp204
 
 El ROM no controla un UART directamente. El RP2040 expone al bus del cartucho
 un mailbox de 256 bytes en `0x1FFF00` y es el único dueño del UART conectado al
-ESP32-S3. El firmware específico del cartucho debe implementar este contrato.
+ESP32-S3. `firmware/rp2040_pm2040` implementa este contrato sobre PM2040.
+
+La ROM se sirve desde una ventana SRAM mutable de 64 KiB y se refleja en el
+espacio de cartucho. Por eso `0x1FFF00` corresponde al offset SRAM `0xFF00`.
+El límite actual para el archivo `.min` es 64 KiB.
 
 | Offset | Campo | Descripción |
 |---:|---|---|

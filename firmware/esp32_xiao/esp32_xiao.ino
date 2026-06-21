@@ -7,6 +7,7 @@ static size_t inputLength;
 static char usbInputLine[96];
 static size_t usbInputLength;
 static int scanCount;
+static const int maxReportedAps = 32;
 static uint32_t rxBytes;
 static uint32_t commandCount;
 static uint32_t lastHeartbeat;
@@ -66,6 +67,7 @@ static bool validUnsigned(const char* text) {
 
 static void handleScan() {
   int i;
+  int reportedCount;
   uint32_t startedAt = millis();
 
   /* Confirm receipt before the blocking radio scan starts. */
@@ -87,7 +89,14 @@ static void handleScan() {
   Serial.print(" AP(s) in ");
   Serial.print(millis() - startedAt);
   Serial.println(" ms");
-  for (i = 0; i < scanCount; ++i) {
+  reportedCount = scanCount < maxReportedAps ? scanCount : maxReportedAps;
+  if (scanCount > reportedCount) {
+    logPrefix("SCAN");
+    Serial.print("Limiting UART response to ");
+    Serial.print(reportedCount);
+    Serial.println(" AP(s)");
+  }
+  for (i = 0; i < reportedCount; ++i) {
     Serial1.print("AP "); Serial1.print(i); Serial1.write('|');
     printSafe(WiFi.SSID(i).c_str()); Serial1.write('|');
     Serial1.print(WiFi.BSSIDstr(i)); Serial1.write('|');
@@ -100,8 +109,8 @@ static void handleScan() {
     Serial.print(" CH="); Serial.print(WiFi.channel(i));
     Serial.print(" RSSI="); Serial.println(WiFi.RSSI(i));
   }
-  Serial1.print("SCAN_DONE "); Serial1.println(scanCount);
-  logPrefix("TX"); Serial.print("SCAN_DONE "); Serial.println(scanCount);
+  Serial1.print("SCAN_DONE "); Serial1.println(reportedCount);
+  logPrefix("TX"); Serial.print("SCAN_DONE "); Serial.println(reportedCount);
   Serial1.flush();
   WiFi.scanDelete();
 }
