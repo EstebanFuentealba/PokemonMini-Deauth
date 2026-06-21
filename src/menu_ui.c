@@ -24,6 +24,12 @@ static void print_clipped( int x, int y, const char* text, uint8_t chars )
   while ( *text && chars-- ) { printChar( x, y, (unsigned char)*text++ ); x += 6; }
 }
 
+static void print_ssid( int x, int y, const char* ssid, uint8_t chars )
+{
+  /* Empty SSIDs are legitimate hidden networks, not parser failures. */
+  print_clipped( x, y, *ssid ? ssid : "HIDDEN", chars );
+}
+
 static void draw_menu( const AppContext* app )
 {
   uint8_t i;
@@ -45,7 +51,7 @@ static void draw_results( const AppContext* app )
     index = app->list_top + row;
     if ( index >= app->aps.count ) break;
     printChar( 0, row + 2, index == app->list_index ? '>' : ' ' );
-    print_clipped( 7, row + 2, app->aps.items[index].ssid, 9 );
+    print_ssid( 7, row + 2, app->aps.items[index].ssid, 9 );
     print_int( 67, row + 2, app->aps.items[index].rssi );
   }
   print( 0, 7, "A:SEL B:BACK" );
@@ -56,7 +62,7 @@ static void draw_selected( const AppContext* app )
   const WifiAp* ap = wifi_ap_selected( &app->aps );
   print( 0, 0, "SELECTED:" );
   if ( !ap ) return;
-  print_clipped( 0, 2, ap->ssid, 16 );
+  print_ssid( 0, 2, ap->ssid, 16 );
   print( 0, 3, "CH:" ); print_int( 24, 3, ap->channel );
   print( 48, 3, "RSSI:" ); print_int( 78, 3, ap->rssi );
   print_clipped( 0, 5, ap->bssid, 16 );
@@ -69,7 +75,7 @@ static void draw_simulation( const AppContext* app )
   const WifiAp* ap = wifi_ap_selected( &app->aps );
   print( 18, 0, "SIM MODE" );
   print( 0, 2, "TARGET:" );
-  if ( ap ) print_clipped( 0, 3, ap->ssid, 16 );
+  if ( ap ) print_ssid( 0, 3, ap->ssid, 16 );
   print( 0, 5, "STATUS:" );
   if ( app->state == APP_SIM_ATTACK_RUNNING ) print( 0, 6, "RUNNING" );
   else print( 0, 6, "READY/WAIT" );

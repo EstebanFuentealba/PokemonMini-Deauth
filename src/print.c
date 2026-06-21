@@ -12,21 +12,12 @@ void printChar( int x, int y, unsigned char c ) {
   
   buffP = ( unsigned char* ) ( FRAMEBUFF + x + y * LCDWIDTH );
   
-  // Unsupported chars/white space.
-  if ( c < 32 ) {
-    c = 32;
-    
-  } else if ( c >= 32 && c < 91 ) {
-    // No change.
-    
-  } else if ( c >= 65 && c < 123 ) {
-    // Convert small to capital.
-    c -= 32;
-    
-  } else {
-    // Return "?"
-    c = 63;
-  }
+  /* The bundled font contains ASCII 32..90 only. Normalize common SSID
+   * characters instead of indexing a placeholder glyph accidentally. */
+  if ( c >= 'a' && c <= 'z' ) c -= ( 'a' - 'A' );
+  if ( c == '_' ) c = '-';
+  if ( c < 32 ) c = 32;
+  else if ( c > 90 ) c = '?';
   
   // Remove the base.
   c -= 32;
