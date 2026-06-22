@@ -35,10 +35,10 @@ static void send_select( AppContext* app )
   serial_protocol_send( command );
 }
 
-static void send_simulation( AppContext* app )
+static void send_sim_attack( AppContext* app )
 {
   const WifiAp* ap = wifi_ap_selected( &app->aps );
-  char command[48] = "SIM_DEAUTH ";
+  char command[48] = "SIM_ATTACK ";
   uint8_t at = 11;
   unsigned int i = 0;
   if ( !ap ) { set_error( app, "SELECT AP FIRST" ); return; }
@@ -47,6 +47,8 @@ static void send_simulation( AppContext* app )
   at = append_uint( command, at, ap->channel );
   command[at] = '\0';
   if ( !serial_protocol_send( command ) ) { set_error( app, "LINK BUSY" ); return; }
+  app->sim_attack_deauth = 0;
+  app->sim_attack_disassoc = 0;
   app->state = APP_SIM_ATTACK_READY;
   app->dirty = 1;
 }
@@ -59,6 +61,9 @@ void app_init( AppContext* app )
   app->list_index = 0;
   app->list_top = 0;
   app->select_pending = 0;
+  app->monitor_poll_ticks = 0;
+  app->sim_attack_deauth = 0;
+  app->sim_attack_disassoc = 0;
   app->dirty = 1;
   app->error[0] = '\0';
   serial_protocol_init();
@@ -81,7 +86,7 @@ void app_handle_input( AppContext* app, uint8_t up, uint8_t down,
       if ( !app->aps.count ) { set_error( app, "NO SCAN RESULTS" ); return; }
       app->state = APP_SCAN_RESULTS;
       app->list_index = 0; app->list_top = 0; app->dirty = 1;
-    } else send_simulation( app );
+    } else send_sim_attack( app );
     return;
   }
 
@@ -101,7 +106,8 @@ void app_handle_input( AppContext* app, uint8_t up, uint8_t down,
     return;
   }
 
-  if ( app->state == APP_SIM_ATTACK_RUNNING && back ) {
+  if ( ( app->state == APP_SIM_ATTACK_READY ||
+         app->state == APP_SIM_ATTACK_RUNNING ) && back ) {
     if ( !serial_protocol_busy() ) serial_protocol_send( "STOP" );
     return;
   }
@@ -127,10 +133,18 @@ static void handle_event( AppContext* app, SerialEvent* event )
       }
       break;
     case SERIAL_EVENT_STATUS:
-      if ( event->status == SIM_STATUS_RUNNING ) app->state = APP_SIM_ATTACK_RUNNING;
+      if ( event->status == SIM_STATUS_RUNNING ) {
+        app->state = APP_SIM_ATTACK_RUNNING;
+        app->monitor_poll_ticks = 0;
+      }
       else if ( event->status == SIM_STATUS_READY ) app->state = APP_SIM_ATTACK_READY;
       else if ( event->status == SIM_STATUS_STOPPED ) app->state = APP_AP_SELECTED;
-      else set_error( app, "SIMULATION ERROR" );
+      else set_error( app, "MONITOR ERROR" );
+      app->dirty = 1;
+      break;
+    case SERIAL_EVENT_MONITOR:
+      app->sim_attack_deauth = event->count;
+      app->sim_attack_disassoc = event->count2;
       app->dirty = 1;
       break;
     case SERIAL_EVENT_ERROR: set_error( app, event->message ); break;
@@ -154,4 +168,10 @@ void app_tick( AppContext* app )
 {
   SerialEvent event;
   if ( serial_protocol_tick( &event ) ) handle_event( app, &event );
+  if ( app->state == APP_SIM_ATTACK_RUNNING && !serial_protocol_busy() ) {
+    if ( ++app->monitor_poll_ticks >= 60 ) {
+      app->monitor_poll_ticks = 0;
+      serial_protocol_send( "SIM_ATTACK_STATUS" );
+    }
+  }
 }

@@ -99,6 +99,13 @@ static void parse_line( SerialEvent* event )
     else if ( !strcmp( state, "RUNNING" ) ) event->status = SIM_STATUS_RUNNING;
     else if ( !strcmp( state, "STOPPED" ) ) event->status = SIM_STATUS_STOPPED;
     else if ( strcmp( state, "ERROR" ) ) event->type = SERIAL_EVENT_INVALID;
+  } else if ( !strncmp( line_buffer, "MONITOR ", 8 ) ) {
+    cursor = line_buffer + 8;
+    field = split_field( &cursor );
+    event->count = parse_unsigned( field, &valid );
+    if ( !valid || *cursor == '\0' ) return;
+    event->count2 = parse_unsigned( cursor, &valid );
+    if ( valid ) event->type = SERIAL_EVENT_MONITOR;
   } else if ( !strncmp( line_buffer, "AP ", 3 ) ) {
     cursor = line_buffer + 3;
     field = split_field( &cursor );

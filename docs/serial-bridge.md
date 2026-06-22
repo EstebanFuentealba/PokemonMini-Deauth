@@ -35,5 +35,13 @@ su UART. Esta separación deja futuras órdenes de laboratorio como extensiones
 del protocolo textual sin introducir lógica WiFi en el cartucho.
 
 El sketch seguro de referencia para el otro extremo está en
-`firmware/esp32_xiao/esp32_xiao.ino`. Solo implementa scan y estados simulados;
-no contiene transmisión de deauth, modo promiscuo ni inyección de paquetes.
+`firmware/esp32_xiao/esp32_xiao.ino`. `DEAUTH_SCAN <bssid> <channel>` inicia un
+monitor pasivo, filtrado a tramas de gestión, que cuenta deauth y disassociation
+relacionados con el BSSID seleccionado. `STOP` lo detiene. Los contadores se
+publican en el monitor serial del XIAO y `DEAUTH_STATUS` responde
+`MONITOR <deauth>|<disassoc>` para mostrarlos en la Pokémon Mini. No se guardan
+payloads. El log USB conserva únicamente los metadatos del último evento:
+subtipo, RSSI, canal, MAC origen y MAC destino.
+
+El monitor usa modo promiscuo únicamente para recepción. El firmware no llama
+APIs de transmisión raw, no construye tramas deauth y no inyecta paquetes.

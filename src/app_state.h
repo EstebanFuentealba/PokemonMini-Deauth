@@ -22,6 +22,9 @@ typedef struct {
   uint8_t list_index;
   uint8_t list_top;
   uint8_t select_pending;
+  uint8_t monitor_poll_ticks;
+  unsigned int sim_attack_deauth;
+  unsigned int sim_attack_disassoc;
   uint8_t dirty;
   char error[33];
 } AppContext;

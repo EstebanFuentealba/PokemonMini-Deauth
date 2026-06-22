@@ -111,7 +111,8 @@ static void classify_command(const char *command) {
     if (!strcmp(command, "SCAN")) command_kind = CMD_SCAN;
     else if (!strcmp(command, "PING")) command_kind = CMD_PING;
     else if (starts_with(command, "SELECT ")) command_kind = CMD_SELECT;
-    else if (starts_with(command, "SIM_DEAUTH ")) command_kind = CMD_SIM;
+    else if (starts_with(command, "SIM_DEAUTH ") ||
+             starts_with(command, "DEAUTH_SCAN ")) command_kind = CMD_SIM;
     else if (!strcmp(command, "STOP")) command_kind = CMD_STOP;
 }
 

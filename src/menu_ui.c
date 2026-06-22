@@ -70,15 +70,16 @@ static void draw_selected( const AppContext* app )
   print( 0, 7, "B:BACK" );
 }
 
-static void draw_simulation( const AppContext* app )
+static void draw_deauth_monitor( const AppContext* app )
 {
   const WifiAp* ap = wifi_ap_selected( &app->aps );
-  print( 18, 0, "SIM MODE" );
+  print( 12, 0, "DEAUTH MON" );
   print( 0, 2, "TARGET:" );
   if ( ap ) print_ssid( 0, 3, ap->ssid, 16 );
-  print( 0, 5, "STATUS:" );
-  if ( app->state == APP_SIM_ATTACK_RUNNING ) print( 0, 6, "RUNNING" );
-  else print( 0, 6, "READY/WAIT" );
+  if ( app->state == APP_SIM_ATTACK_RUNNING ) {
+    print( 0, 5, "DEAUTH:" ); print_int( 48, 5, app->sim_attack_deauth );
+    print( 0, 6, "DISASSOC:" ); print_int( 60, 6, app->sim_attack_disassoc );
+  } else print( 0, 5, "READY/WAIT" );
   print( 0, 7, "B:STOP/BACK" );
 }
 
@@ -91,7 +92,7 @@ void menu_ui_draw( const AppContext* app )
   } else if ( app->state == APP_SCAN_RESULTS ) draw_results( app );
   else if ( app->state == APP_AP_SELECTED ) draw_selected( app );
   else if ( app->state == APP_SIM_ATTACK_READY || app->state == APP_SIM_ATTACK_RUNNING )
-    draw_simulation( app );
+    draw_sim_attack_monitor( app );
   else {
     print( 24, 1, "ERROR" );
     print_clipped( 0, 3, app->error, 16 );

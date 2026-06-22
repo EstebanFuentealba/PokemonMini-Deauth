@@ -16,6 +16,7 @@ typedef enum {
   SERIAL_EVENT_AP,
   SERIAL_EVENT_SCAN_DONE,
   SERIAL_EVENT_STATUS,
+  SERIAL_EVENT_MONITOR,
   SERIAL_EVENT_PONG,
   SERIAL_EVENT_INVALID,
   SERIAL_EVENT_TIMEOUT
@@ -33,6 +34,7 @@ typedef struct {
   SerialEventType type;
   WifiAp ap;
   unsigned int count;
+  unsigned int count2;
   SimStatus status;
   char message[33];
 } SerialEvent;
