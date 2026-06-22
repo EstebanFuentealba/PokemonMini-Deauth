@@ -92,7 +92,7 @@ void menu_ui_draw( const AppContext* app )
   } else if ( app->state == APP_SCAN_RESULTS ) draw_results( app );
   else if ( app->state == APP_AP_SELECTED ) draw_selected( app );
   else if ( app->state == APP_SIM_ATTACK_READY || app->state == APP_SIM_ATTACK_RUNNING )
-    draw_sim_attack_monitor( app );
+    draw_deauth_monitor( app );
   else {
     print( 24, 1, "ERROR" );
     print_clipped( 0, 3, app->error, 16 );
