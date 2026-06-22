@@ -137,7 +137,10 @@ class WiFiScan {
   bool attackRunning() const { return attackRunning_; }
 
   AttackStats getAttackStats() const {
-    return attackStats_;
+    AttackStats result;
+    result.deauthSent = attackStats_.deauthSent;
+    result.disassocSent = attackStats_.disassocSent;
+    return result;
   }
 
   // Enviar un paquete de deautenticación
